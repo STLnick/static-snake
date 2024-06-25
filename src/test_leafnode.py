@@ -6,8 +6,6 @@ class TestLeafNode(unittest.TestCase):
     def test_value_required(self):
         with self.assertRaises(ValueError):
             leaf = LeafNode(None)
-        with self.assertRaises(ValueError):
-            leaf = LeafNode(None, "")
     
     def test_to_html(self):
         anchor = LeafNode("a", "i am link", { "href": "boot.dev" })

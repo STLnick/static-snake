@@ -1,11 +1,11 @@
 from htmlnode import HTMLNode
 
 class ParentNode(HTMLNode):
-    def __init__(self, tag = None, children = None, props = None, value = None):
-        super().__init__(tag, value, props, children)
+    def __init__(self, tag = None, children = None, props = None):
+        super().__init__(tag, None, props, children)
 
     def __repr__(self):
-        return f"ParentNode(tag={self.tag}, value={self.value}, props={self.props}), numChildren={len(self.children)}"
+        return f"ParentNode(tag={self.tag}, props={self.props}), numChildren={len(self.children)}"
 
     def to_html(self):
         if self.tag == None:

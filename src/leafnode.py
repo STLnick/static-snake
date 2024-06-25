@@ -2,7 +2,7 @@ from htmlnode import HTMLNode
 
 class LeafNode(HTMLNode):
     def __init__(self, tag = None, value = None, props = None):
-        if value == None or value == "":
+        if value == None:
             raise ValueError("leaf node requires value")
         super().__init__(tag, value, props, None)
 
