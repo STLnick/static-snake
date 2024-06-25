@@ -1,3 +1,4 @@
+import re
 from leafnode import LeafNode
 from textnode import TextNode
 
@@ -15,6 +16,17 @@ class SSSyntaxError(Exception):
 
 class SSTypeError(Exception):
     pass
+
+MD_IMG_REGEX = r"!\[(.*?)\]\((.*?)\)"
+MD_LINK_REGEX = r"(?<!\!)\[(.*?)\]\((.*?)\)"
+
+def extract_markdown_images(text):
+    global MD_IMG_REGEX
+    return re.findall(MD_IMG_REGEX, text)
+
+def extract_markdown_links(text):
+    global MD_LINK_REGEX
+    return re.findall(MD_LINK_REGEX, text)
     
 def text_node_to_html_node(text_node):
     if not text_node.text_type in valid_text_types.values():
@@ -63,18 +75,28 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
 
     return new_nodes
 
+# def split_nodes_regex(old_nodes, regex, text_type):
+    # new_nodes = []
+    # for node in old_nodes:
+        # matches = re.findall(regex, node.text)
+    # return tuples
+
 def split_nodes(old_nodes):
     delimiters = {
         "**": valid_text_types.get("text_type_bold"),
         "*": valid_text_types.get("text_type_italic"),
         "`": valid_text_types.get("text_type_code"),
-
-        # TODO: Add remaining delmiters with types
-        # "[]()": valid_text_types.get("text_type_link"),
-        # "![]()": valid_text_types.get("text_type_image"),
     }
+    regex_delimiters = {
+        r"!\[(.*?)\]\((.*?)\)": valid_text_types.get("text_type_image"),
+        r"\[(.*?)\]\((.*?)\)": valid_text_types.get("text_type_link"),
+    }
+    
     new_nodes = old_nodes
     for delimiter, text_type in delimiters.items():
         new_nodes = split_nodes_delimiter(new_nodes, delimiter, text_type);
+    # for regex, text_type in regex_delimiters.items():
+        # new_nodes = split_nodes_regex(new_nodes, regex, text_type);
+
     return new_nodes
 

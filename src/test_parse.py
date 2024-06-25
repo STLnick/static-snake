@@ -81,5 +81,29 @@ class TestParse(unittest.TestCase):
                 node = TextNode(bad_value, valid_text_types['text_type_text'])
                 result = split_nodes([node])
 
+    def test_extract_markdown_images(self):
+        # Valid
+        text = "This is an image ![alty texty](https://picsum.photos/200/300)"
+        expected = [ ("alty texty", "https://picsum.photos/200/300") ]
+        result = extract_markdown_images(text)
+        self.assertEqual(result, expected)
+        # Missing "!" to start image tag
+        text = "This is a [link](www.google.com)"
+        expected = []
+        result = extract_markdown_images(text)
+        self.assertEqual(result, expected)
+    
+    def test_extract_markdown_links(self):
+        # Has "!" to start image tag instead of link tag
+        text = "This is an image ![alty texty](https://picsum.photos/200/300)"
+        expected = []
+        result = extract_markdown_links(text)
+        self.assertEqual(result, expected)
+        # Valid
+        text = "This is a [link](www.google.com)"
+        expected = [ ("link", "www.google.com") ]
+        result = extract_markdown_links(text)
+        self.assertEqual(result, expected)
+
 if __name__ == "__main__":
     unittest.main()
