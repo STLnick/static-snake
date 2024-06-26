@@ -10,15 +10,15 @@ class TestParse(unittest.TestCase):
                 [
                     "This has `code` text",
                     [
-                        TextNode("This has ", text_types['text_type_text']),
-                        TextNode("code", text_types['text_type_code']),
-                        TextNode(" text", text_types['text_type_text']),
+                        TextNode("This has ", TextType.TEXT),
+                        TextNode("code", TextType.CODE),
+                        TextNode(" text", TextType.TEXT),
                     ],
                 ],
                 [
                     "`This is all code text`",
                     [
-                        TextNode("This is all code text", text_types['text_type_code']),
+                        TextNode("This is all code text", TextType.CODE),
                     ],
                 ],
             ],
@@ -26,38 +26,34 @@ class TestParse(unittest.TestCase):
                 [
                     "This has **bolded** text",
                     [
-                        TextNode("This has ", text_types['text_type_text']),
-                        TextNode("bolded", text_types['text_type_bold']),
-                        TextNode(" text", text_types['text_type_text']),
+                        TextNode("This has ", TextType.TEXT),
+                        TextNode("bolded", TextType.BOLD),
+                        TextNode(" text", TextType.TEXT),
                     ],
                 ],
                 [
                     "**This is bolded text**",
                     [
-                        TextNode("This is bolded text", text_types['text_type_bold']),
+                        TextNode("This is bolded text", TextType.BOLD),
                     ],
                 ],
             ],
-            # Image - - - - - - - -
-            # TODO
             "italic": [
                 [
                     "This has *italicized* text",
                     [
-                        TextNode("This has ", text_types['text_type_text']),
-                        TextNode("italicized", text_types['text_type_italic']),
-                        TextNode(" text", text_types['text_type_text']),
+                        TextNode("This has ", TextType.TEXT),
+                        TextNode("italicized", TextType.ITALIC),
+                        TextNode(" text", TextType.TEXT),
                     ]
                 ],
                 [
                     "*This is italicized text*",
                     [
-                        TextNode("This is italicized text", text_types['text_type_italic']),
+                        TextNode("This is italicized text", TextType.ITALIC),
                     ],
                 ],
             ],
-            # Link - - - - - - - -
-            # TODO
         }
 
     def test_delimiters(self):
@@ -106,19 +102,19 @@ class TestParse(unittest.TestCase):
     def test_split_nodes_images(self):
         text = "This is an image ![alty texty](https://picsum.photos/200/300)"
         expected = [
-            TextNode("This is an image ", text_types["text_type_text"]),
-            TextNode("alty texty", text_types["text_type_image"], "https://picsum.photos/200/300"),
+            TextNode("This is an image ", TextType.TEXT),
+            TextNode("alty texty", TextType.IMAGE, "https://picsum.photos/200/300"),
         ]
         result = text_to_textnodes(text)
         self.assertEqual(result, expected)
         # Multiple images in text
         text = "This is img1:![img1 alty texty](https://picsum.photos/200/300) and img2:![img2 alty texty](https://picsum.photos/200/300); after all images"
         expected = [
-            TextNode("This is img1:", text_types["text_type_text"]),
-            TextNode("img1 alty texty", text_types["text_type_image"], "https://picsum.photos/200/300"),
-            TextNode(" and img2:", text_types["text_type_text"]),
-            TextNode("img2 alty texty", text_types["text_type_image"], "https://picsum.photos/200/300"),
-            TextNode("; after all images", text_types["text_type_text"]),
+            TextNode("This is img1:", TextType.TEXT),
+            TextNode("img1 alty texty", TextType.IMAGE, "https://picsum.photos/200/300"),
+            TextNode(" and img2:", TextType.TEXT),
+            TextNode("img2 alty texty", TextType.IMAGE, "https://picsum.photos/200/300"),
+            TextNode("; after all images", TextType.TEXT),
         ]
         result = text_to_textnodes(text)
         self.assertEqual(result, expected)
@@ -126,19 +122,19 @@ class TestParse(unittest.TestCase):
     def test_split_nodes_links(self):
         text = "This is a [link](www.google.com)"
         expected = [
-            TextNode("This is a ", text_types["text_type_text"]),
-            TextNode("link", text_types["text_type_link"], "www.google.com"),
+            TextNode("This is a ", TextType.TEXT),
+            TextNode("link", TextType.LINK, "www.google.com"),
         ]
         result = text_to_textnodes(text)
         self.assertEqual(result, expected)
         # Multiple links in text
         text = "This is [link one](www.google.com) and over here is [link two](www.bing.com); both are great!"
         expected = [
-            TextNode("This is ", text_types["text_type_text"]),
-            TextNode("link one", text_types["text_type_link"], "www.google.com"),
-            TextNode(" and over here is ", text_types["text_type_text"]),
-            TextNode("link two", text_types["text_type_link"], "www.bing.com"),
-            TextNode("; both are great!", text_types["text_type_text"]),
+            TextNode("This is ", TextType.TEXT),
+            TextNode("link one", TextType.LINK, "www.google.com"),
+            TextNode(" and over here is ", TextType.TEXT),
+            TextNode("link two", TextType.LINK, "www.bing.com"),
+            TextNode("; both are great!", TextType.TEXT),
         ]
         result = text_to_textnodes(text)
         self.assertEqual(result, expected)
@@ -146,16 +142,16 @@ class TestParse(unittest.TestCase):
     def test_text_to_textnodes(self):
         text = "This is **text** with an *italic* word and a `code block` and an ![image](https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/zjjcJKZ.png) and a [link](https://boot.dev)"
         expected = [
-            TextNode("This is ", text_types["text_type_text"]),
-            TextNode("text", text_types["text_type_bold"]),
-            TextNode(" with an ", text_types["text_type_text"]),
-            TextNode("italic", text_types["text_type_italic"]),
-            TextNode(" word and a ", text_types["text_type_text"]),
-            TextNode("code block", text_types["text_type_code"]),
-            TextNode(" and an ", text_types["text_type_text"]),
-            TextNode("image", text_types["text_type_image"], "https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/zjjcJKZ.png"),
-            TextNode(" and a ", text_types["text_type_text"]),
-            TextNode("link", text_types["text_type_link"], "https://boot.dev"),
+            TextNode("This is ", TextType.TEXT),
+            TextNode("text", TextType.BOLD),
+            TextNode(" with an ", TextType.TEXT),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" word and a ", TextType.TEXT),
+            TextNode("code block", TextType.CODE),
+            TextNode(" and an ", TextType.TEXT),
+            TextNode("image", TextType.IMAGE, "https://storage.googleapis.com/qvault-webapp-dynamic-assets/course_assets/zjjcJKZ.png"),
+            TextNode(" and a ", TextType.TEXT),
+            TextNode("link", TextType.LINK, "https://boot.dev"),
         ]
         result = text_to_textnodes(text)
         self.assertEqual(result, expected)
