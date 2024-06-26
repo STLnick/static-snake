@@ -115,3 +115,21 @@ def text_to_textnodes(text):
     nodes = split_nodes_links(nodes)
     return nodes
 
+def markdown_to_blocks(md_text):
+    # "" element indicates the separation of blocks;
+    split_text = md_text.split("\n")
+    blocks = []
+    current_block = []
+    for s in md_text.split("\n"):
+        if s != "":
+            current_block.append(s)
+        else:
+            if len(current_block) > 0:
+                block_str = "\n".join(current_block)
+                blocks.append(block_str)
+                current_block.clear()
+    if len(current_block) > 0:
+        block_str = "\n".join(current_block)
+        blocks.append(block_str)
+    return blocks
+

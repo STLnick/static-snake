@@ -160,5 +160,15 @@ class TestParse(unittest.TestCase):
         result = text_to_textnodes(text)
         self.assertEqual(result, expected)
 
+    def test_markdown_to_blocks(self):
+        expected = [
+            "# This is a heading",
+            "This is a paragraph of text. It has some **bold** and *italic* words inside of it.",
+            "* This is a list item\n* This is another list item",
+        ]
+        md = "\n\n".join(expected)
+        result = markdown_to_blocks(md)
+        self.assertEqual(result, expected)
+
 if __name__ == "__main__":
     unittest.main()
