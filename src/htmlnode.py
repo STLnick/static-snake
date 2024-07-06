@@ -6,6 +6,8 @@ class HTMLNode:
         self.children = children # Node without children is assumed to have a value
 
     def __eq__(self, value):
+        if value == None:
+            return False
         return (
             self.value == value.value
             and self.tag == value.tag
@@ -17,7 +19,10 @@ class HTMLNode:
         return f"HTMLNode(tag={self.tag}, value={self.value}, props={self.props}, children={self.children})"
 
     def to_html(self):
-        raise NotImplementedError
+        if self.tag == None:
+            return self.value
+        else:
+            raise NotImplementedError
 
     def props_to_html(self):
         if self.props == None or len(self.props) == 0:

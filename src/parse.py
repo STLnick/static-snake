@@ -1,7 +1,25 @@
 from enum import Enum, unique
+import os 
 import re
+
 from leafnode import LeafNode
+from parentnode import ParentNode
 from textnode import TextNode
+
+class SSSyntaxError(Exception):
+    pass
+
+class SSTypeError(Exception):
+    pass
+
+@unique
+class BlockType(Enum):
+    PARAGRAPH = 0
+    HEADING = 1
+    CODE = 2
+    QUOTE = 3
+    UNORDERED_LIST = 4
+    ORDERED_LIST = 5
 
 @unique
 class TextType(Enum):
@@ -11,12 +29,6 @@ class TextType(Enum):
     CODE = 3
     LINK = 4
     IMAGE = 5
-
-class SSSyntaxError(Exception):
-    pass
-
-class SSTypeError(Exception):
-    pass
 
 MD_IMG_REGEX = r"!\[(.*?)\]\((.*?)\)"
 MD_LINK_REGEX = r"(?<!\!)\[(.*?)\]\((.*?)\)"
@@ -111,9 +123,9 @@ def split_nodes_links(old_nodes):
 
 def text_to_textnodes(text):
     node = TextNode(text, TextType.TEXT)
-    nodes = split_nodes_delimiter([node], "**", TextType.BOLD);
-    nodes = split_nodes_delimiter(nodes, "*", TextType.ITALIC);
-    nodes = split_nodes_delimiter(nodes, "`", TextType.CODE);
+    nodes = split_nodes_delimiter([node], "**", TextType.BOLD)
+    nodes = split_nodes_delimiter(nodes, "*", TextType.ITALIC)
+    nodes = split_nodes_delimiter(nodes, "`", TextType.CODE)
     nodes = split_nodes_images(nodes)
     nodes = split_nodes_links(nodes)
     return nodes
@@ -136,3 +148,154 @@ def markdown_to_blocks(md_text):
         blocks.append(block_str)
     return blocks
 
+def block_to_block_type(block_text):
+    # print(f"BLOCKTEXT: {block_text}")
+    
+    heading_re = re.compile(r"^#+ ")
+    if bool(heading_re.match(block_text)):
+        return BlockType.HEADING
+    elif block_text.startswith("```") and block_text.endswith("```"):
+        return BlockType.CODE
+    
+    spl = block_text.split("\n")
+    is_quote = True
+    for s in spl:
+        if not s.startswith(">"):
+            is_quote = False
+            break
+    if is_quote:
+        return BlockType.QUOTE
+    
+    is_ul = True
+    for s in spl:
+        if not s.startswith("* ") and not s.startswith("- "):
+            is_ul = False
+            break
+    if is_ul:
+        return BlockType.UNORDERED_LIST
+    
+    is_ol = True
+    ol_re = re.compile(r"^\d\.")
+    current_num = 1
+    for s in spl:
+        # if not a digit then "." OR the digit isn't one more than previous number
+        if not bool(ol_re.match(s)) or s[0] != f"{current_num}":
+            is_ol = False
+            break
+        current_num += 1
+    if is_ol:
+        return BlockType.ORDERED_LIST
+
+    return BlockType.PARAGRAPH
+
+def markdown_to_html_node(md_doc):
+    blocks = markdown_to_blocks(md_doc)
+    children = []
+    for b in blocks:
+        match block_to_block_type(b):
+            case BlockType.PARAGRAPH:
+                children.append(create_paragraph(b))
+            case BlockType.HEADING:
+                children.append(create_heading(b))
+            case BlockType.CODE:
+                children.append(create_code(b))
+            case BlockType.QUOTE:
+                children.append(create_quote(b))
+            case BlockType.UNORDERED_LIST:
+                children.append(create_unordered_list(b))
+            case BlockType.ORDERED_LIST:
+                children.append(create_ordered_list(b))
+    return ParentNode("div", children)
+
+def create_code(block):
+    code = LeafNode("code", block[3:len(block) - 3])
+    return ParentNode("pre", [code])
+
+def create_heading(block):
+    level = 0
+    for c in block:
+        if c == "#":
+            level += 1
+        else:
+            break
+    value = block_to_node_value(block[level + 1:])
+    return LeafNode(f"h{level}", value)
+
+def create_ordered_list(block):
+    list_items = []
+    for line in block.split("\n"):
+        list_items.append(LeafNode("li", line[3:]))
+    
+    return ParentNode("ol", list_items)
+
+def create_paragraph(block):
+    value = block_to_node_value(block)
+    return LeafNode("p", value)
+
+def create_quote(block):
+    cleaned = []
+    for line in block.split("\n"):
+        cleaned.append(line[2:])
+    value = block_to_node_value("\n".join(cleaned))
+    return LeafNode("blockquote", value)
+
+def create_unordered_list(block):
+    list_items = []
+    for line in block.split("\n"):
+        list_items.append(LeafNode("li", line[2:]))
+    
+    return ParentNode("ul", list_items)
+
+def block_to_node_value(block):
+    text_nodes = text_to_textnodes(block)
+    value = ""
+    for node in text_nodes:
+        html_node = text_node_to_html_node(node)
+        value += html_node.to_html()
+    return value
+
+def extract_title(html):
+    pattern = ".*<h1>(.+)<\/h1>.*"
+    for block in html.split("\n"):
+        result = re.search(pattern, block)
+        if result != None:
+            return result.group(1)
+    raise SSSyntaxError
+
+def generate_page(from_path, to_path, template_path):
+    print(f"Generating page from {from_path} to {to_path} using {template_path}")
+    # Get markdown file
+    source = open(from_path, "r")
+    md_doc = source.read()
+    source.close()
+    html_node = markdown_to_html_node(md_doc)
+    html = html_node.to_html()
+    # Get HTML template
+    template = open(template_path, "r")
+    template_html = template.read()
+    template.close()
+    # Compile template
+    compiled_html = template_html.replace("{{ Title }}", extract_title(html))
+    compiled_html = compiled_html.replace("{{ Content }}", html)
+    # Write compiled template to to_path location
+    to_dir = os.path.dirname(to_path)
+    if not os.path.exists(to_dir):
+        os.makedirs(to_dir)
+    file_name = to_path[:-3]
+    out = open(f"{file_name}.html", "w")
+    out.write(compiled_html)
+    out.close()
+
+def generate_pages_recursive(dir_path_content, dest_dir_path, template_path):
+    if not os.path.isdir(dir_path_content):
+        raise Exception(f"source path is not a directory: {dir_path_content}")
+    dir_list = os.listdir(dir_path_content)
+    if len(dir_list) == 0:
+        return
+    for entry in dir_list:
+        if os.path.isfile(os.path.join(dir_path_content, entry)) and entry.endswith(".md"):
+            generate_page(os.path.join(dir_path_content, entry), os.path.join(dest_dir_path, entry), template_path)
+        elif os.path.isdir(os.path.join(dir_path_content, entry)):
+
+            generate_pages_recursive(os.path.join(dir_path_content, entry), os.path.join(dest_dir_path, entry), template_path)
+    print("Done.")

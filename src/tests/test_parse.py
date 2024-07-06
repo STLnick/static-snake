@@ -166,5 +166,50 @@ class TestParse(unittest.TestCase):
         result = markdown_to_blocks(md)
         self.assertEqual(result, expected)
 
+    def test_block_to_block_type(self):
+        expected = BlockType.HEADING
+        for text in ["# H1", "## H2", "### H3", "#### H4", "##### H5", "###### H6"]:
+            result = block_to_block_type(text)
+            self.assertEqual(result, expected)
+        
+        expected = BlockType.QUOTE
+        text = "> quote 1"
+        result = block_to_block_type(text)
+        self.assertEqual(result, expected)
+        text = "> quote 1\n> quote 2"
+        result = block_to_block_type(text)
+        self.assertEqual(result, expected)
+        
+        expected = BlockType.CODE
+        text = "```code here```"
+        result = block_to_block_type(text)
+        self.assertEqual(result, expected)
+        text = """```js
+        const x = 1;
+        const y = x * 2;
+        console.log({ x, y });
+        ```"""
+        result = block_to_block_type(text)
+        self.assertEqual(result, expected)
+        
+        expected = BlockType.UNORDERED_LIST
+        text = "* li 1\n* li 2\n* li 3"
+        result = block_to_block_type(text)
+        self.assertEqual(result, expected)
+        text = "* li 1\n- li 2\n- li 3"
+        result = block_to_block_type(text)
+        self.assertEqual(result, expected)
+
+        expected = BlockType.ORDERED_LIST
+        text = "1. li 1\n2. li 2\n3. li 3"
+        result = block_to_block_type(text)
+        self.assertEqual(result, expected)
+
+        expected = BlockType.PARAGRAPH
+        # Bad ordering syntax, expect paragraph
+        text = "1. li 1\n2. li 2\n2. li 3"
+        result = block_to_block_type(text)
+        self.assertEqual(result, expected)
+
 if __name__ == "__main__":
     unittest.main()
